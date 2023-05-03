@@ -27,16 +27,12 @@ func CreatePod(Clusterns string, Podname string, Podimage string, Ports string) 
 
 	hostPort, _ = strconv.ParseInt(ports[0], 10, 32)
 	contPort, _ = strconv.ParseInt(ports[1], 10, 32)
-
-	if Clusterns == "" {
-		// logging.Warn("-n flag is empty! Setting up Namespace = default")
-		Clusterns = "default"
-	}
+	ns, _ = CurrentNs(Clusterns)
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      Podname,
-			Namespace: Clusterns,
+			Namespace: ns,
 			Labels: map[string]string{
 				"app": Podname,
 			},
@@ -59,7 +55,7 @@ func CreatePod(Clusterns string, Podname string, Podimage string, Ports string) 
 		},
 	}
 
-	podcreate, err := clientset.CoreV1().Pods(Clusterns).Create(ctx, pod, metav1.CreateOptions{})
+	podcreate, err := clientset.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		logging.Err("Error creating pod 😢")
 		logging.Err(err.Error())
@@ -72,12 +68,8 @@ func CreatePod(Clusterns string, Podname string, Podimage string, Ports string) 
 func DeletePod(Clusterns string, PodName string) {
 	clientset := Kconfig
 	ctx := context.Background()
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
-	err := clientset.CoreV1().Pods(Clusterns).Delete(ctx, PodName, metav1.DeleteOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	err := clientset.CoreV1().Pods(ns).Delete(ctx, PodName, metav1.DeleteOptions{})
 	if err != nil {
 		logging.Err("Error deleting pod 😢")
 		return
@@ -101,10 +93,7 @@ func CreateService(Clusterns string, Podname string, Servicename string, Service
 		logging.Err("🚨 podname, servicename, ports should be provided")
 		return
 	}
-	if Clusterns == "" {
-		// logging.Warn("-n flag is empty! Setting up Namespace = default")
-		Clusterns = "default"
-	}
+	ns, _ = CurrentNs(Clusterns)
 
 	switch strings.ToLower(Servicetype) {
 	case "nodeport":
@@ -121,7 +110,7 @@ func CreateService(Clusterns string, Podname string, Servicename string, Service
 	service := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      Servicename,
-			Namespace: Clusterns,
+			Namespace: ns,
 			Labels: map[string]string{
 				"app": Servicename + "-service",
 			},
@@ -149,7 +138,7 @@ func CreateService(Clusterns string, Podname string, Servicename string, Service
 
 		service.Spec.Ports = append(service.Spec.Ports, v1.ServicePort{NodePort: Nodeport})
 	}
-	servicecreate, err := clientset.CoreV1().Services(Clusterns).Create(ctx, service, metav1.CreateOptions{})
+	servicecreate, err := clientset.CoreV1().Services(ns).Create(ctx, service, metav1.CreateOptions{})
 	if err != nil {
 		logging.Err("Error creating service 😢")
 		logging.Err(err.Error())
@@ -163,12 +152,8 @@ func CreateService(Clusterns string, Podname string, Servicename string, Service
 func DeleteService(Clusterns string, ServiceName string) {
 	clientset := Kconfig
 	ctx := context.Background()
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
-	err := clientset.CoreV1().Services(Clusterns).Delete(ctx, ServiceName, metav1.DeleteOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	err := clientset.CoreV1().Services(ns).Delete(ctx, ServiceName, metav1.DeleteOptions{})
 	if err != nil {
 		logging.Err("Error deleting service 😢")
 		logging.Err(err.Error())
@@ -186,11 +171,7 @@ func CreateDeployment(Clusterns string, Deploymentname string, Podimage string, 
 		logging.Err("🚨 deploymentname and podimage should be provided")
 		return
 	}
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
+	ns, _ = CurrentNs(Clusterns)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: Deploymentname,
@@ -231,7 +212,7 @@ func CreateDeployment(Clusterns string, Deploymentname string, Podimage string, 
 			},
 		},
 	}
-	deploymentcreate, err := clientset.AppsV1().Deployments(Clusterns).Create(ctx, deployment, metav1.CreateOptions{})
+	deploymentcreate, err := clientset.AppsV1().Deployments(ns).Create(ctx, deployment, metav1.CreateOptions{})
 	if err != nil {
 		logging.Err("Error creating deployment 😢")
 		logging.Err(err.Error())
@@ -245,10 +226,8 @@ func CreateDeployment(Clusterns string, Deploymentname string, Podimage string, 
 func DeleteDeployment(Clusterns string, DeploymentName string) {
 	clientset := Kconfig
 	ctx := context.Background()
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-	err := clientset.AppsV1().Deployments(Clusterns).Delete(ctx, DeploymentName, metav1.DeleteOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	err := clientset.AppsV1().Deployments(ns).Delete(ctx, DeploymentName, metav1.DeleteOptions{})
 	if err != nil {
 		logging.Err("Error deleting deployment 😢")
 		logging.Err(err.Error())

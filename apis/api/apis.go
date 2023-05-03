@@ -9,7 +9,9 @@ import (
 	"os"
 
 	cnfg "github.com/bishal7679/ksapify/internal/config"
+	"github.com/bishal7679/ksapify/internal/kubeconfig"
 	yml "github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,23 +27,22 @@ import (
 
 var (
 	result string
+	kc     *kubeconfig.Kubeconfig
+	ns     string
 )
 
 // This function is used to get the all the list of pods name only
 func Pods(Clusterns string) error {
 	clientset := Kconfig
 	ctx := context.Background()
-	if Clusterns == "" {
-		// logging.Warn("-n flag is empty! Setting up Namespace = default")
-		Clusterns = "default"
-	}
-	pods, err := clientset.CoreV1().Pods(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	pods, err := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
 
 	if err != nil {
 		panic(err)
 	}
 	if len(pods.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 	} else {
 		for i := 0; i < len(pods.Items); i++ {
 			logging.Print(pods.Items[i].Name)
@@ -55,23 +56,19 @@ func Pods(Clusterns string) error {
 func PodDetails(Clusterns string, ContainerDetails bool) string {
 
 	clientset := Kconfig
-	// var result string
 	ctx := context.Background()
 
 	var podInfo []cnfg.Pod
 	var containerInfo []cnfg.Container
 
-	if Clusterns == "" {
-		logging.Warn("-n flag is empty! Setting up Namespace = default")
-		Clusterns = "default"
-	}
-	pods, err := clientset.CoreV1().Pods(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	pods, err := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 
 	if len(pods.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 	} else {
 		for i := 0; i < len(pods.Items); i++ {
 			podInfo = append(podInfo, cnfg.Pod{
@@ -112,10 +109,11 @@ func PodDetails(Clusterns string, ContainerDetails bool) string {
 func PodLogs(Clusterns string, PodName string) {
 	clientset := Kconfig
 	ctx := context.Background()
-	pods, _ := clientset.CoreV1().Pods(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	pods, _ := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
 	for i := 0; i < len(pods.Items); i++ {
 		if pods.Items[i].Name == PodName {
-			request := clientset.CoreV1().Pods(Clusterns).GetLogs(PodName, &(v1.PodLogOptions{}))
+			request := clientset.CoreV1().Pods(ns).GetLogs(PodName, &(v1.PodLogOptions{}))
 			podLogs, err := request.Stream(ctx)
 			if err != nil {
 				logging.Err("error in opening stream *restclient.Request")
@@ -127,12 +125,6 @@ func PodLogs(Clusterns string, PodName string) {
 			if err != nil {
 				panic(err)
 			}
-
-			// podLogs_result, err := json.MarshalIndent(buf.String(), "", "  ")
-			// if err != nil {
-			// 	fmt.Println(err)
-			// }
-			// logging.Verbose = true
 			logging.Info(buf.String(), "")
 			return
 		}
@@ -144,50 +136,26 @@ func PodLogs(Clusterns string, PodName string) {
 // This function is used to get the all the list of deployments in the cluster
 
 func Deployments(Clusterns string, Output string, Wide bool) {
-	// type Deploymentappsv1 struct {
-	// 	apiVersion string
-	// 	kind       string
-	// 	metadata   interface{}
-
-	// 	spec   interface{}
-	// 	status interface{}
-	// }
-	// type Metadata struct {
-	// 	annotations       interface{}
-	// 	creationTimestamp interface{}
-	// 	generations       interface{}
-	// 	labels            interface{}
-	// 	name              interface{}
-	// 	namespace         interface{}
-	// 	resourceVersion   interface{}
-	// 	uid               interface{}
-	// }
-
 	clientset := Kconfig
 	var deploymentlist []cnfg.Deployment
 	var deploymentlistwide []cnfg.WideResult
 	ctx := context.Background()
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-	deployments, err := clientset.AppsV1().Deployments(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	deployments, err := clientset.AppsV1().Deployments(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
 	if len(deployments.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 		return
 	}
 	if Wide || Output == "yaml" {
 		for i := 0; i < len(deployments.Items); i++ {
 			deploymentlistwide = append(deploymentlistwide, cnfg.WideResult{
 				ApiVersion: v1.SchemeGroupVersion.Version,
-				// Items:      append(deployments.Items, Deploymentappsv1{apiVersion: deployments.Items[i].APIVersion, kind: deployments.Items[i].Kind, metadata: appsv1.Deployment.Spec.Template.ObjectMeta, spec: deployments.Items[i].Spec, status: }),
-				Items: deployments.Items[i],
-				// metadata: Metadata{annotations: deployments.Items[i].Annotations, creationTimestamp: deployments.Items[i].CreationTimestamp, generations: deployments.Items[i].Generation, labels: deployments.Items[i].Labels, name: deployments.Items[i].Name, namespace: deployments.Items[i].Namespace, resourceVersion: deployments.Items[i].ResourceVersion, uid: deployments.Items[i].UID}, spec: deployments.Items[i].Spec, status: deployments.Items[i].Status}}),
-				Kind:     "List",
-				Metadata: deployments.ListMeta,
+				Items:      deployments.Items[i],
+				Kind:       "List",
+				Metadata:   deployments.ListMeta,
 			})
 		}
 
@@ -220,17 +188,14 @@ func Services(Clusterns string, Output string, Wide bool) {
 	var servicelist []cnfg.Service
 	var servicelistwide []cnfg.WideResult
 	ctx := context.Background()
+	ns, _ = CurrentNs(Clusterns)
 
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
-	services, err := clientset.CoreV1().Services(Clusterns).List(ctx, metav1.ListOptions{})
+	services, err := clientset.CoreV1().Services(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	if len(services.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 		return
 	}
 	if Wide || Output == "yaml" {
@@ -300,17 +265,13 @@ func Configmaps(Clusterns string, Output string, Wide bool) {
 	var configmaplist []cnfg.Configmap
 	var configmaplistwide []cnfg.WideResult
 	ctx := context.Background()
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
-	configmaps, err := clientset.CoreV1().ConfigMaps(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	configmaps, err := clientset.CoreV1().ConfigMaps(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	if len(configmaps.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 		return
 	}
 	if Wide || Output == "yaml" {
@@ -347,17 +308,13 @@ func Daemonsets(Clusterns string, Output string, Wide bool) {
 	var daemonsetlist []cnfg.Daemonset
 	var daemonsetlistwide []cnfg.WideResult
 	ctx := context.Background()
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
-	daemonsets, err := clientset.AppsV1().DaemonSets(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	daemonsets, err := clientset.AppsV1().DaemonSets(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	if len(daemonsets.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 		return
 	}
 	if Wide || Output == "yaml" {
@@ -416,17 +373,13 @@ func Events(Clusterns string, Output string, Wide bool) {
 	var eventlist []cnfg.Event
 	var eventlistwide []cnfg.WideResult
 	ctx := context.Background()
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
-	events, err := clientset.CoreV1().Events(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	events, err := clientset.CoreV1().Events(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	if len(events.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 		return
 	}
 	if Wide || Output == "yaml" {
@@ -467,18 +420,14 @@ func Replicationcontrollers(Clusterns string, Output string, Wide bool) {
 	var replicationcontrollerlist []cnfg.Replicationcontroller
 	var replicationcontrollerlistwide []cnfg.WideResult
 	ctx := context.Background()
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
-	replicationcontrollers, err := clientset.CoreV1().ReplicationControllers(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	replicationcontrollers, err := clientset.CoreV1().ReplicationControllers(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 
 	}
 	if len(replicationcontrollers.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 		return
 	}
 	if Wide || Output == "yaml" {
@@ -519,17 +468,13 @@ func Replicasets(Clusterns string, Output string, Wide bool) {
 	var replicasetlist []cnfg.Replicaset
 	var replicasetlistwide []cnfg.WideResult
 	ctx := context.Background()
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
-	replicasets, err := clientset.AppsV1().ReplicaSets(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	replicasets, err := clientset.AppsV1().ReplicaSets(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	if len(replicasets.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 		return
 	}
 	if Wide || Output == "yaml" {
@@ -570,17 +515,13 @@ func Secrets(Clusterns string, Output string, Wide bool) {
 	var secretlist []cnfg.Secret
 	var secretlistwide []cnfg.WideResult
 	ctx := context.Background()
-
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
-	secrets, err := clientset.CoreV1().Secrets(Clusterns).List(ctx, metav1.ListOptions{})
+	ns, _ = CurrentNs(Clusterns)
+	secrets, err := clientset.CoreV1().Secrets(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	if len(secrets.Items) == 0 {
-		logging.Print("No resources found in " + Clusterns + " namespace")
+		logging.Print("No resources found in " + ns + " namespace")
 		return
 	}
 	if Wide || Output == "yaml" {
@@ -717,12 +658,9 @@ func AllObject(Clusterns string) {
 
 	clientset := Kconfig
 	ctx := context.Background()
-	if Clusterns == "" {
-		Clusterns = "default"
-	}
-
+	ns, _ = CurrentNs(Clusterns)
 	// pod names
-	pods, _ := clientset.CoreV1().Pods(Clusterns).List(ctx, metav1.ListOptions{})
+	pods, _ := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
 
 	if len(pods.Items) != 0 {
 		logging.Normal("NAME")
@@ -733,7 +671,7 @@ func AllObject(Clusterns string) {
 	}
 
 	// service names
-	svc, _ := clientset.CoreV1().Services(Clusterns).List(ctx, metav1.ListOptions{})
+	svc, _ := clientset.CoreV1().Services(ns).List(ctx, metav1.ListOptions{})
 
 	if len(svc.Items) != 0 {
 		logging.Normal("NAME")
@@ -744,7 +682,7 @@ func AllObject(Clusterns string) {
 	}
 
 	// daemonsetnames
-	daemonsets, _ := clientset.AppsV1().DaemonSets(Clusterns).List(ctx, metav1.ListOptions{})
+	daemonsets, _ := clientset.AppsV1().DaemonSets(ns).List(ctx, metav1.ListOptions{})
 
 	if len(daemonsets.Items) != 0 {
 		logging.Normal("NAME")
@@ -755,7 +693,7 @@ func AllObject(Clusterns string) {
 	}
 
 	// deployment name
-	deployments, _ := clientset.AppsV1().Deployments(Clusterns).List(ctx, metav1.ListOptions{})
+	deployments, _ := clientset.AppsV1().Deployments(ns).List(ctx, metav1.ListOptions{})
 
 	if len(deployments.Items) != 0 {
 		logging.Normal("NAME")
@@ -766,7 +704,7 @@ func AllObject(Clusterns string) {
 	}
 
 	// replicaset name
-	replicasets, _ := clientset.AppsV1().ReplicaSets(Clusterns).List(ctx, metav1.ListOptions{})
+	replicasets, _ := clientset.AppsV1().ReplicaSets(ns).List(ctx, metav1.ListOptions{})
 
 	if len(replicasets.Items) != 0 {
 		logging.Normal("NAME")
@@ -775,4 +713,28 @@ func AllObject(Clusterns string) {
 		}
 	}
 
+}
+
+func CurrentNs(Clusterns string) (string, error) {
+	var ns string
+
+	kc = new(kubeconfig.Kubeconfig).WithLoader(kubeconfig.DefaultLoader)
+	defer kc.Close()
+	if err := kc.Parse(); err != nil {
+		logging.Err(err.Error())
+	}
+	ctx := kc.GetCurrentContext()
+	if ctx == "" {
+		return "", errors.New("current-context is not set")
+	}
+	curNS, err := kc.NamespaceOfContext(ctx)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get current namespace")
+	}
+	if Clusterns == "" {
+		ns = curNS
+	} else {
+		ns = Clusterns
+	}
+	return ns, nil
 }
