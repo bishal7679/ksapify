@@ -655,7 +655,7 @@ func Declarative(filename string, Delete bool) {
 
 func AllObject(Clusterns string) {
 	OutsideClusterConfig()
-
+	countobj := 0
 	clientset := Kconfig
 	ctx := context.Background()
 	ns, _ = CurrentNs(Clusterns)
@@ -668,6 +668,7 @@ func AllObject(Clusterns string) {
 			logging.Print("pod/" + pods.Items[i].Name)
 		}
 		fmt.Printf("\n")
+		countobj += 1
 	}
 
 	// service names
@@ -679,6 +680,7 @@ func AllObject(Clusterns string) {
 			logging.Print("service/" + svc.Items[i].Name)
 		}
 		fmt.Printf("\n")
+		countobj += 1
 	}
 
 	// daemonsetnames
@@ -690,6 +692,7 @@ func AllObject(Clusterns string) {
 			logging.Print("daemonset.apps/" + daemonsets.Items[i].Name)
 		}
 		fmt.Printf("\n")
+		countobj += 1
 	}
 
 	// deployment name
@@ -701,6 +704,7 @@ func AllObject(Clusterns string) {
 			logging.Print("deployment.apps/" + deployments.Items[i].Name)
 		}
 		fmt.Printf("\n")
+		countobj += 1
 	}
 
 	// replicaset name
@@ -711,6 +715,11 @@ func AllObject(Clusterns string) {
 		for i := 0; i < len(replicasets.Items); i++ {
 			logging.Print("replicaset.apps/" + replicasets.Items[i].Name)
 		}
+		countobj += 1
+	}
+
+	if countobj == 0 {
+		logging.Print("No resources found in " + ns + " namespace")
 	}
 
 }

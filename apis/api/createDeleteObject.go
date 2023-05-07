@@ -267,3 +267,119 @@ func DeleteNamespace(Namespacename string) {
 	}
 	logging.Print("namespace " + "\"" + Namespacename + "\"" + " deleted 🎉")
 }
+
+func DeleteAllObject(Clusterns string) {
+	clientset := Kconfig
+	ctx := context.Background()
+	ns, _ = CurrentNs(Clusterns)
+	pods, err := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logging.Err(err.Error())
+		return
+	}
+	for i := 0; i < len(pods.Items); i++ {
+		err := clientset.CoreV1().Pods(ns).Delete(ctx, pods.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			logging.Err(err.Error())
+			return
+		}
+	}
+	deployments, err := clientset.AppsV1().Deployments(ns).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logging.Err(err.Error())
+		return
+	}
+	for i := 0; i < len(deployments.Items); i++ {
+		err := clientset.AppsV1().Deployments(ns).Delete(ctx, deployments.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			logging.Err(err.Error())
+			return
+		}
+	}
+	events, err := clientset.CoreV1().Events(ns).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logging.Err(err.Error())
+		return
+	}
+	for i := 0; i < len(events.Items); i++ {
+		err := clientset.CoreV1().Events(ns).Delete(ctx, events.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			logging.Err(err.Error())
+			return
+		}
+	}
+	services, err := clientset.CoreV1().Services(ns).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logging.Err(err.Error())
+		return
+	}
+	for i := 0; i < len(services.Items); i++ {
+		err := clientset.CoreV1().Services(ns).Delete(ctx, services.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			logging.Err(err.Error())
+			return
+		}
+	}
+	configmaps, err := clientset.CoreV1().ConfigMaps(ns).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logging.Err(err.Error())
+		return
+	}
+	for i := 0; i < len(configmaps.Items); i++ {
+		err := clientset.CoreV1().ConfigMaps(ns).Delete(ctx, configmaps.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			logging.Err(err.Error())
+			return
+		}
+	}
+	secrets, err := clientset.CoreV1().Secrets(ns).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logging.Err(err.Error())
+		return
+	}
+	for i := 0; i < len(secrets.Items); i++ {
+		err := clientset.CoreV1().Secrets(ns).Delete(ctx, secrets.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			logging.Err(err.Error())
+			return
+		}
+	}
+	replicationcontrollers, err := clientset.CoreV1().ReplicationControllers(ns).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logging.Err(err.Error())
+		return
+	}
+	for i := 0; i < len(replicationcontrollers.Items); i++ {
+		err := clientset.CoreV1().ReplicationControllers(ns).Delete(ctx, replicationcontrollers.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			logging.Err(err.Error())
+			return
+		}
+	}
+	replicasets, err := clientset.AppsV1().ReplicaSets(ns).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logging.Err(err.Error())
+		return
+	}
+	for i := 0; i < len(replicasets.Items); i++ {
+		err := clientset.AppsV1().ReplicaSets(ns).Delete(ctx, replicasets.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			logging.Err(err.Error())
+			return
+		}
+	}
+	daemonsets, err := clientset.AppsV1().DaemonSets(ns).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		logging.Err(err.Error())
+		return
+	}
+	for i := 0; i < len(daemonsets.Items); i++ {
+		err := clientset.AppsV1().DaemonSets(ns).Delete(context.Background(), daemonsets.Items[i].Name, metav1.DeleteOptions{})
+		if err != nil {
+			logging.Err(err.Error())
+			return
+		}
+	}
+
+	logging.Print("All resources in " + "\"" + ns + "\"" + " deleted 🎉")
+}
