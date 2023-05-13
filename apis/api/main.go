@@ -55,7 +55,7 @@ func OutsideClusterConfigFancy() {
 		}
 	} else {
 		time.Sleep(3 * time.Second)
-		logging.Info("config built successfully!✅", "")
+		logging.Info("config built successfully ✔", "")
 	}
 
 	// creating the clientset to access all the resources
@@ -64,7 +64,7 @@ func OutsideClusterConfigFancy() {
 		logging.Err("error creating clientset 😢")
 	} else {
 		time.Sleep(4 * time.Second)
-		logging.Info("clientset created successfully!✅", "")
+		logging.Info("clientset created successfully ✔", "")
 
 	}
 
