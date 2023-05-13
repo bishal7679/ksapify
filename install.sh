@@ -1,5 +1,5 @@
 #!/bin/bash
-sh ./builder.sh
+bash <(curl -s https://raw.githubusercontent.com/bishal7679/ksapify/main/builder.sh)
 
 
 echo -e "\033[32;40mINSTALLATION COMPLETED!\033[0m\n"
