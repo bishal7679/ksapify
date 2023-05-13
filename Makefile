@@ -13,8 +13,5 @@ install_linux:
 install_macos:
 	env GOOS=${GOOS_MACOS} GOARCH=${GOARCH_MACOS} ./builder.sh
 
-install_macos_intel:
-	env GOOS=${GOOS_MACOS} GOARCH=${GOARCH_MACOS_INTEL} ./builder.sh
-
 uninstall:
 	./uninstall.sh
