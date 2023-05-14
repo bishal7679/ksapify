@@ -53,7 +53,7 @@ sudo wget -q https://github.com/bishal7679/ksapify/releases/download/v${RELEASE_
 sudo wget https://github.com/bishal7679/ksapify/releases/download/v${RELEASE_VERSION}/ksapify_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz
 
 file=$(sha256sum ksapify_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz | awk '{print $1}')
-checksum=$(cat ksapify_${RELEASE_VERSION}_checksums.txt | grep ksctl_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz | awk '{print $1}')
+checksum=$(cat ksapify_${RELEASE_VERSION}_checksums.txt | grep ksapify_${RELEASE_VERSION}_${OS}_${ARCH}.tar.gz | awk '{print $1}')
 
 if [[ $file != $checksum ]]; then
   echo -e "${Red}Checksum didn't matched!${NoColor}"
