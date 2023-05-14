@@ -23,6 +23,6 @@ signs:
       - '--output-certificate=${certificate}' 
       - '--output-signature=${signature}'
       - '${artifact}'
-      - --yes
+      # - --yes
     artifacts: all
     output: true
