@@ -1,0 +1,28 @@
+project_name: ksapify
+
+builds:
+  - binary: ksapify
+    id: "ksapify-primary"
+    main: ./cli
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X "github.com/bishal7679/ksapify/cli/cmd.BuildDate={{.Env.DATE}}"
+      - -s -w -X "github.com/bishal7679/ksapify/cli/cmd.Version={{.Env.VERSION}}"
+    env:
+      - CGO_ENABLED=0
+signs:
+  - cmd: cosign
+    certificate: "${artifact}.cert"
+    args:
+      - sign-blob
+      - '--output-certificate=${certificate}' 
+      - '--output-signature=${signature}'
+      - '${artifact}'
+      - --yes
+    artifacts: all
+    output: true
