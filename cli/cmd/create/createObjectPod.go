@@ -33,7 +33,7 @@ func init() {
 	createObjectPodCmd.Flags().StringVarP(&Ports, "ports", "p", "", "Port [hostport:containerport]")
 	CreateobjectCmd.AddCommand(createObjectPodCmd)
 	createObjectPodCmd.MarkFlagRequired("name")
-	createObjectPodCmd.MarkFlagRequired("namespace")
+	// createObjectPodCmd.MarkFlagRequired("namespace")
 	createObjectPodCmd.MarkFlagRequired("ports")
 	createObjectPodCmd.MarkFlagRequired("image")
 
