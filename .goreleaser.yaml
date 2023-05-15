@@ -22,9 +22,9 @@ signs:
     args:
       - "sign-blob"
       - "--key=cosign.key"
-      - '--output-certificate=${certificate}' 
+      - "--output-certificate=${certificate}"
       - "--output-signature=${signature}"
       - "${artifact}"
-      # - --yes
+      - --yes
     artifacts: all
     output: true
